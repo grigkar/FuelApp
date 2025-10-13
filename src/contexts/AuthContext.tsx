@@ -108,23 +108,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw error;
     }
 
+    // Check if user already exists (identities array is empty when email is already registered)
+    if (data?.user?.identities?.length === 0) {
+      toast({
+        title: "Account already exists",
+        description: "This email is already registered. Please use the login tab instead.",
+        variant: "destructive",
+      });
+      throw new Error("USER_ALREADY_EXISTS");
+    }
+
     // Check if email confirmation is required
     if (data?.user && !data.session) {
       toast({
         title: "Check your email",
-        description: "We've sent you a confirmation link. Please check your email to activate your account.",
+        description: "We've sent you a confirmation link. Please check your email (including spam folder) to activate your account.",
       });
       throw new Error("EMAIL_CONFIRMATION_REQUIRED");
-    }
-
-    // Check if user already exists
-    if (data?.user?.identities?.length === 0) {
-      toast({
-        title: "Account already exists",
-        description: "This email is already registered. Please log in instead.",
-        variant: "destructive",
-      });
-      throw new Error("USER_ALREADY_EXISTS");
     }
     
     toast({
