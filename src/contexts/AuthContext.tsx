@@ -118,11 +118,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error("USER_ALREADY_EXISTS");
     }
 
-    // Check if email confirmation is required
+    // Check if email confirmation is required (no session means confirmation is needed)
     if (data?.user && !data.session) {
       toast({
         title: "Check your email",
-        description: "We've sent you a confirmation link. Please check your email (including spam folder) to activate your account.",
+        description: "Please check your email (including spam folder) and click the confirmation link to activate your account.",
       });
       throw new Error("EMAIL_CONFIRMATION_REQUIRED");
     }
