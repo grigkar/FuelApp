@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fuelEntryApi, vehicleApi } from "@/lib/api";
@@ -42,8 +42,13 @@ export default function Statistics() {
   const entriesWithMetrics = calculateAllMetrics(entries);
   const brandGradeStats = calculateBrandGradeStats(entriesWithMetrics);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
+
   if (!isAuthenticated) {
-    navigate("/auth");
     return null;
   }
 

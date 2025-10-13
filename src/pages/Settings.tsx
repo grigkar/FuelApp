@@ -52,8 +52,13 @@ export default function Settings() {
     });
   };
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
+
   if (!isAuthenticated) {
-    navigate("/auth");
     return null;
   }
 

@@ -139,8 +139,13 @@ export default function FillUp() {
     saveMutation.mutate(data);
   };
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate]);
+
   if (!isAuthenticated) {
-    navigate("/auth");
     return null;
   }
 
