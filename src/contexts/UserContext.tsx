@@ -1,7 +1,8 @@
 // User settings context for managing units, currency, and preferences
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "./AuthContext";
+import { userApi } from "@/lib/api";
 import { AppUser } from "@/types";
-import { mockUser } from "@/lib/mockData";
 
 interface UserContextType {
   user: AppUser | null;
@@ -12,32 +13,31 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
+  const { user: authUser, isAuthenticated } = useAuth();
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Sync user from auth context
   useEffect(() => {
-    // Simulate loading user from session/localStorage
-    const loadUser = () => {
-      const stored = localStorage.getItem("fuel_tracker_user");
-      if (stored) {
-        setUser(JSON.parse(stored));
-      } else {
-        // Default to mock user for MVP
-        setUser(mockUser);
-        localStorage.setItem("fuel_tracker_user", JSON.stringify(mockUser));
-      }
+    if (authUser) {
+      setUser(authUser);
       setIsLoading(false);
-    };
+    } else {
+      setUser(null);
+      setIsLoading(false);
+    }
+  }, [authUser]);
 
-    loadUser();
-  }, []);
-
-  const updateUser = (updates: Partial<AppUser>) => {
+  const updateUser = async (updates: Partial<AppUser>) => {
     if (!user) return;
 
-    const updated = { ...user, ...updates, updated_at: new Date().toISOString() };
-    setUser(updated);
-    localStorage.setItem("fuel_tracker_user", JSON.stringify(updated));
+    try {
+      const { data } = await userApi.updateProfile(user.id, updates);
+      setUser(data);
+    } catch (error) {
+      console.error("Failed to update user profile:", error);
+      throw error;
+    }
   };
 
   return (

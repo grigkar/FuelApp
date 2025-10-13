@@ -1,104 +1,83 @@
-// API service layer - will connect to Directus REST API
-// For now uses mock data matching Directus response format
+// API service layer for Supabase integration
+// All calculations are done client-side in calculations.ts
 
-import { 
-  AppUser, 
-  Vehicle, 
-  FuelEntry, 
-  DirectusResponse, 
-  DirectusListResponse 
+import { supabase } from "@/integrations/supabase/client";
+import type {
+  Vehicle,
+  FuelEntry,
+  AppUser,
+  DirectusListResponse,
+  DirectusResponse,
 } from "@/types";
-import { mockUser, mockVehicles, mockFuelEntries } from "./mockData";
 
-// Base URL from environment variable (for future Directus integration)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
-
-// Simulated API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Authentication APIs
-export const authApi = {
-  async login(email: string, password: string): Promise<DirectusResponse<AppUser>> {
-    await delay(500);
-    // Mock successful login
-    return { data: mockUser };
-  },
-  
-  async signup(email: string, password: string, display_name?: string): Promise<DirectusResponse<AppUser>> {
-    await delay(500);
-    // Mock successful signup
-    return { 
-      data: { 
-        ...mockUser, 
-        email, 
-        display_name: display_name || mockUser.display_name 
-      } 
-    };
-  },
-  
-  async logout(): Promise<void> {
-    await delay(300);
-    // Mock logout
-  },
-  
-  async getCurrentUser(): Promise<DirectusResponse<AppUser>> {
-    await delay(200);
-    return { data: mockUser };
-  },
-};
-
-// User/Profile APIs
-export const userApi = {
-  async getProfile(): Promise<DirectusResponse<AppUser>> {
-    await delay(300);
-    return { data: mockUser };
-  },
-  
-  async updateProfile(updates: Partial<AppUser>): Promise<DirectusResponse<AppUser>> {
-    await delay(400);
-    return { data: { ...mockUser, ...updates } };
-  },
-};
-
-// Vehicle APIs
+// Vehicle API
 export const vehicleApi = {
   async getAll(): Promise<DirectusListResponse<Vehicle>> {
-    await delay(300);
-    return { data: mockVehicles };
+    const { data, error } = await supabase
+      .from("vehicles")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return { data: data || [] };
   },
-  
+
   async getById(id: string): Promise<DirectusResponse<Vehicle>> {
-    await delay(200);
-    const vehicle = mockVehicles.find(v => v.id === id);
-    if (!vehicle) throw new Error("Vehicle not found");
-    return { data: vehicle };
+    const { data, error } = await supabase
+      .from("vehicles")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    return { data };
   },
-  
-  async create(vehicle: Omit<Vehicle, "id" | "created_at" | "updated_at">): Promise<DirectusResponse<Vehicle>> {
-    await delay(400);
-    const newVehicle: Vehicle = {
-      ...vehicle,
-      id: `vehicle-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    return { data: newVehicle };
+
+  async create(
+    vehicle: Omit<Vehicle, "id" | "created_at" | "updated_at">
+  ): Promise<DirectusResponse<Vehicle>> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const { data, error } = await supabase
+      .from("vehicles")
+      .insert({
+        ...vehicle,
+        user_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data };
   },
-  
-  async update(id: string, updates: Partial<Vehicle>): Promise<DirectusResponse<Vehicle>> {
-    await delay(400);
-    const vehicle = mockVehicles.find(v => v.id === id);
-    if (!vehicle) throw new Error("Vehicle not found");
-    return { data: { ...vehicle, ...updates, updated_at: new Date().toISOString() } };
+
+  async update(
+    id: string,
+    vehicle: Partial<Vehicle>
+  ): Promise<DirectusResponse<Vehicle>> {
+    const { data, error } = await supabase
+      .from("vehicles")
+      .update(vehicle)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data };
   },
-  
+
   async delete(id: string): Promise<void> {
-    await delay(300);
-    // Mock delete
+    const { error } = await supabase
+      .from("vehicles")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
   },
 };
 
-// Fuel Entry APIs
+// Fuel Entry API
 export const fuelEntryApi = {
   async getAll(filters?: {
     vehicle_id?: string;
@@ -108,62 +87,116 @@ export const fuelEntryApi = {
     grade?: string;
     station?: string;
   }): Promise<DirectusListResponse<FuelEntry>> {
-    await delay(300);
-    
-    let filtered = [...mockFuelEntries];
-    
+    let query = supabase
+      .from("fuel_entries")
+      .select("*")
+      .order("entry_date", { ascending: false });
+
     if (filters?.vehicle_id) {
-      filtered = filtered.filter(e => e.vehicle_id === filters.vehicle_id);
+      query = query.eq("vehicle_id", filters.vehicle_id);
     }
     if (filters?.start_date) {
-      filtered = filtered.filter(e => e.entry_date >= filters.start_date!);
+      query = query.gte("entry_date", filters.start_date);
     }
     if (filters?.end_date) {
-      filtered = filtered.filter(e => e.entry_date <= filters.end_date!);
+      query = query.lte("entry_date", filters.end_date);
     }
     if (filters?.brand) {
-      filtered = filtered.filter(e => e.brand === filters.brand);
+      query = query.eq("brand", filters.brand);
     }
     if (filters?.grade) {
-      filtered = filtered.filter(e => e.grade === filters.grade);
+      query = query.eq("grade", filters.grade);
     }
     if (filters?.station) {
-      filtered = filtered.filter(e => e.station === filters.station);
+      query = query.eq("station", filters.station);
     }
-    
-    return { data: filtered };
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return { data: data || [] };
   },
-  
+
   async getById(id: string): Promise<DirectusResponse<FuelEntry>> {
-    await delay(200);
-    const entry = mockFuelEntries.find(e => e.id === id);
-    if (!entry) throw new Error("Fuel entry not found");
-    return { data: entry };
+    const { data, error } = await supabase
+      .from("fuel_entries")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    return { data };
   },
-  
-  async create(entry: Omit<FuelEntry, "id" | "created_at" | "updated_at">): Promise<DirectusResponse<FuelEntry>> {
-    await delay(400);
-    const newEntry: FuelEntry = {
-      ...entry,
-      id: `entry-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    return { data: newEntry };
+
+  async create(
+    entry: Omit<FuelEntry, "id" | "created_at" | "updated_at">
+  ): Promise<DirectusResponse<FuelEntry>> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const { data, error } = await supabase
+      .from("fuel_entries")
+      .insert({
+        ...entry,
+        user_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data };
   },
-  
-  async update(id: string, updates: Partial<FuelEntry>): Promise<DirectusResponse<FuelEntry>> {
-    await delay(400);
-    const entry = mockFuelEntries.find(e => e.id === id);
-    if (!entry) throw new Error("Fuel entry not found");
-    return { data: { ...entry, ...updates, updated_at: new Date().toISOString() } };
+
+  async update(
+    id: string,
+    entry: Partial<FuelEntry>
+  ): Promise<DirectusResponse<FuelEntry>> {
+    const { data, error } = await supabase
+      .from("fuel_entries")
+      .update(entry)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data };
   },
-  
+
   async delete(id: string): Promise<void> {
-    await delay(300);
-    // Mock delete
+    const { error } = await supabase
+      .from("fuel_entries")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
   },
 };
 
-// Export API base URL for reference
-export { API_BASE_URL };
+// User/Profile API
+export const userApi = {
+  async getProfile(userId: string): Promise<DirectusResponse<AppUser>> {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (error) throw error;
+    return { data: data as AppUser };
+  },
+
+  async updateProfile(
+    userId: string,
+    profile: Partial<AppUser>
+  ): Promise<DirectusResponse<AppUser>> {
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(profile)
+      .eq("id", userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { data: data as AppUser };
+  },
+};

@@ -1,184 +1,92 @@
 # Backend Integration Guide
 
-This document explains how the frontend is structured for backend integration with your Java/Spring/Postgres stack (or Directus REST API).
+This app is now connected to **Supabase** for data storage and authentication. All calculations (fuel consumption, costs, averages) are performed **client-side in JavaScript**.
 
 ## Current Status
 
 ✅ **Completed:**
 - Full React/TypeScript frontend with all MVP screens
-- Complete data model matching your README requirements
-- Mock Directus-style API responses for development
-- All calculation logic (consumption, costs, rolling stats)
+- Complete data model (profiles, vehicles, fuel_entries)
+- **Supabase integration** for data persistence and authentication
+- All calculation logic client-side (consumption, costs, rolling stats)
 - Form validation and error handling
 - Responsive UI with charts and statistics
-- Authentication flow (currently mock)
+- Real authentication flow with Supabase Auth
 - User preferences and settings management
+- Row Level Security (RLS) policies for data isolation
 
-⚠️ **Currently Using Mock Data:**
-- All API calls in `src/lib/api.ts` use mock data
-- Authentication is simulated (no real backend calls)
-- Data persists only in `localStorage` for session
+## Database Schema
 
-## Architecture
+The app uses three main tables in Supabase:
 
-### API Service Layer (`src/lib/api.ts`)
+### profiles
+- Stores user preferences (currency, units, timezone)
+- Automatically created on user signup via trigger
+- One-to-one relationship with auth.users
 
-The API service is designed to match Directus REST conventions but will work with any REST API:
+### vehicles
+- User's vehicle information
+- Each vehicle belongs to a user
+- Used to organize fuel entries
 
-```typescript
-// Current structure - easy to replace with real API calls
-export const vehicleApi = {
-  async getAll(): Promise<DirectusListResponse<Vehicle>> {
-    // Currently returns mock data
-    // Replace with: fetch(`${API_BASE_URL}/items/vehicle`)
-  },
-  async create(vehicle: Omit<Vehicle, "id" | "created_at" | "updated_at">) {
-    // Replace with: POST to ${API_BASE_URL}/items/vehicle
-  },
-  // ... other methods
-};
+### fuel_entries
+- Individual fill-up records
+- Linked to both user and vehicle
+- All metrics calculated client-side from this raw data
+
+## Environment Variables
+
+The app uses these environment variables:
+
+```bash
+# Supabase configuration (required)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-### Expected API Endpoints
+### Using Self-Hosted Supabase (Docker)
 
-Your backend should implement these endpoints:
+You can run Supabase locally or in your own infrastructure:
 
-#### Authentication
-- `POST /api/auth/login` - Login with email/password
-- `POST /api/auth/signup` - Create new user
-- `POST /api/auth/logout` - Logout current user
-- `GET /api/auth/me` - Get current user info
-
-#### Vehicles
-- `GET /api/items/vehicle` - List all vehicles for current user
-- `GET /api/items/vehicle/:id` - Get single vehicle
-- `POST /api/items/vehicle` - Create new vehicle
-- `PATCH /api/items/vehicle/:id` - Update vehicle
-- `DELETE /api/items/vehicle/:id` - Delete vehicle
-
-#### Fuel Entries
-- `GET /api/items/fuel_entry` - List fuel entries
-  - Supports filters: `?filter[vehicle][_eq]=<id>&sort=-entry_date`
-- `GET /api/items/fuel_entry/:id` - Get single entry
-- `POST /api/items/fuel_entry` - Create new entry
-- `PATCH /api/items/fuel_entry/:id` - Update entry
-- `DELETE /api/items/fuel_entry/:id` - Delete entry
-
-#### User Profile
-- `GET /api/items/app_user/:id` - Get user profile
-- `PATCH /api/items/app_user/:id` - Update user preferences
-
-### Expected Response Format
-
-All endpoints should return data in this format (Directus-style):
-
-```json
-// Single item
-{
-  "data": {
-    "id": "uuid",
-    "name": "My Car",
-    ...
-  }
-}
-
-// List of items
-{
-  "data": [
-    { "id": "uuid", ... },
-    { "id": "uuid", ... }
-  ]
-}
-```
-
-## Integration Steps
-
-### Option 1: Keep Frontend Mock (Recommended for Hackathon)
-
-1. Continue developing with mock data
-2. Build your Java/Spring backend in parallel
-3. Connect them once backend is ready
-4. Only write integration code once
-
-### Option 2: Integrate with Directus Now
-
-If you want to use Directus immediately:
-
-1. **Set up Directus instance**
+1. **Clone Supabase:**
    ```bash
-   docker run -d \
-     -p 8055:8055 \
-     -e KEY=your-key \
-     -e SECRET=your-secret \
-     -e DB_CLIENT=postgres \
-     -e DB_HOST=your-db-host \
-     -e DB_PORT=5432 \
-     -e DB_DATABASE=directus \
-     -e DB_USER=directus \
-     -e DB_PASSWORD=directus \
-     directus/directus
+   git clone https://github.com/supabase/supabase
+   cd supabase/docker
+   cp .env.example .env
+   # Edit .env with your settings
+   docker-compose up -d
    ```
 
-2. **Create collections in Directus**
-   - app_user
-   - vehicle
-   - fuel_entry
-
-3. **Update API base URL**
+2. **Update environment variables:**
    ```bash
-   # In .env
-   VITE_API_BASE_URL=http://localhost:8055
+   VITE_SUPABASE_URL=http://localhost:54321
+   VITE_SUPABASE_ANON_KEY=your-local-anon-key
    ```
 
-4. **Replace mock API calls**
-   
-   In `src/lib/api.ts`, replace mock implementations:
+3. **Apply migrations:**
+   - Migrations are in `supabase/migrations/`
+   - Run them via Supabase CLI or SQL editor
 
-   ```typescript
-   export const vehicleApi = {
-     async getAll(): Promise<DirectusListResponse<Vehicle>> {
-       const response = await fetch(`${API_BASE_URL}/items/vehicle`, {
-         headers: {
-           'Authorization': `Bearer ${getToken()}`,
-         }
-       });
-       return response.json();
-     },
-     // ... implement other methods
-   };
-   ```
+The app will work identically with cloud or self-hosted Supabase.
 
-### Option 3: Connect to Your Java Backend
+## How It Works
 
-1. **Implement REST endpoints** in your Spring application matching the API structure above
+1. **Authentication:** Uses Supabase Auth (email/password by default)
+2. **Data Storage:** All CRUD operations use Supabase client (`@supabase/supabase-js`)
+3. **Security:** Row Level Security (RLS) ensures users only see their own data
+4. **Calculations:** All metrics (L/100km, cost/km, averages) computed in `src/lib/calculations.ts`
 
-2. **Set up CORS** in your Spring backend:
-   ```java
-   @Configuration
-   public class WebConfig implements WebMvcConfigurer {
-       @Override
-       public void addCorsMappings(CorsRegistry registry) {
-           registry.addMapping("/api/**")
-                   .allowedOrigins("http://localhost:5173")
-                   .allowedMethods("GET", "POST", "PATCH", "DELETE");
-       }
-   }
-   ```
+## Key Files
 
-3. **Update environment variable**:
-   ```bash
-   # For development
-   VITE_API_BASE_URL=http://localhost:8080/api
-   
-   # For Docker (with Nginx proxy)
-   VITE_API_BASE_URL=/api
-   ```
-
-4. **Replace API implementations** in `src/lib/api.ts`
+- `src/lib/api.ts` - All Supabase queries
+- `src/lib/calculations.ts` - Client-side metric calculations
+- `src/contexts/AuthContext.tsx` - Authentication state
+- `src/contexts/UserContext.tsx` - User preferences
+- `supabase/migrations/` - Database schema and RLS policies
 
 ## Docker Deployment
 
-### Frontend (this app)
+### Frontend + Supabase (Recommended)
 
 ```dockerfile
 # Dockerfile
@@ -187,6 +95,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+
+# Set Supabase env vars at build time
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 RUN npm run build
 
 FROM nginx:alpine
@@ -195,8 +110,6 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 ```
-
-### Nginx Configuration
 
 ```nginx
 # nginx.conf
@@ -208,67 +121,56 @@ server {
         root /usr/share/nginx/html;
         try_files $uri $uri/ /index.html;
     }
-    
-    # Proxy API requests to backend
-    location /api {
-        proxy_pass http://backend:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
 }
 ```
 
-### Docker Compose Example
+### Docker Compose with Self-Hosted Supabase
 
 ```yaml
 version: '3.8'
 
 services:
+  # Your app
   frontend:
-    build: .
+    build: 
+      context: .
+      args:
+        VITE_SUPABASE_URL: http://supabase:8000
+        VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
     ports:
       - "3000:80"
-    environment:
-      - VITE_API_BASE_URL=/api
     depends_on:
-      - backend
+      - supabase
 
-  backend:
-    build: ./backend  # Your Java/Spring app
-    ports:
-      - "8080:8080"
+  # Supabase (simplified - use official docker-compose for production)
+  supabase:
+    image: supabase/postgres:latest
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/fueltracker
-    depends_on:
-      - db
-
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=fueltracker
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "54321:5432"
 
 volumes:
   db-data:
 ```
 
-## Data Model Compatibility
+## Data Model
 
-The frontend expects this exact data structure:
+The frontend uses this exact data structure (matches Supabase schema):
 
-### app_user
+### profiles (app_user)
 ```typescript
 {
-  id: string;
+  id: string; // UUID, references auth.users
   email: string;
   display_name?: string;
-  currency: string;
-  distance_unit: "km" | "mi";
-  volume_unit: "L" | "gal";
-  time_zone: string;
+  currency: string; // default: "EUR"
+  distance_unit: "km" | "mi"; // default: "km"
+  volume_unit: "L" | "gal"; // default: "L"
+  time_zone: string; // default: "Europe/Berlin"
   created_at: string;
   updated_at: string;
 }
@@ -308,30 +210,47 @@ The frontend expects this exact data structure:
 }
 ```
 
+## Client-Side Calculations
+
+**Important:** All derived metrics are calculated in JavaScript (see `src/lib/calculations.ts`):
+
+- `distance_since_last` = current odometer - previous odometer
+- `unit_price` = total / liters
+- `consumption_l_per_100km` = (liters / distance) × 100
+- `consumption_mpg` = miles / gallons
+- `cost_per_km` = total / distance
+- Rolling averages for any period (e.g., last 30 days)
+
+The database only stores **raw data** (date, odometer, liters, total). No calculations are performed server-side.
+
 ## Validation Rules
 
-The frontend implements these validations (your backend should too):
+Both client and server should enforce:
 
 - **Odometer**: Must increase for each vehicle
 - **Date**: Cannot be in the future
-- **Liters & Total**: Must be positive
+- **Liters & Total**: Must be positive numbers
 - **Email**: Valid email format
-- **Password**: Min 8 chars, at least 1 letter and 1 number
+- **Password**: Min 8 chars (enforced by Supabase)
 
-## Testing the Integration
+## Authentication
 
-1. **Start your backend** on port 8080
-2. **Update .env**: `VITE_API_BASE_URL=http://localhost:8080/api`
-3. **Start frontend**: `npm run dev`
-4. **Test each flow**:
-   - Sign up / Login
-   - Add a vehicle
-   - Add a fill-up
-   - View dashboard, history, statistics
+Uses **Supabase Auth** with:
+- Email/password authentication
+- Session persistence via localStorage
+- Automatic token refresh
+- Password reset capability
 
-## Notes
+To disable email confirmation during development:
+1. Go to Supabase Dashboard → Authentication → Settings
+2. Disable "Enable email confirmations"
 
-- All calculations (consumption, costs, etc.) are done **client-side**
-- Backend only needs to store/retrieve raw data
-- Frontend handles unit conversions (km/mi, L/gal)
-- Date formatting and timezone handling done in frontend
+## Testing
+
+1. Sign up for an account
+2. Add a vehicle
+3. Add fuel entries
+4. View dashboard, statistics, and history
+5. Update user preferences in settings
+
+All data is isolated per user via RLS policies.

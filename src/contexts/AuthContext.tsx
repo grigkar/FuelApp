@@ -1,7 +1,8 @@
-// Authentication context (mock for MVP, will connect to Directus later)
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { AppUser } from "@/types";
-import { authApi } from "@/lib/api";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { userApi } from "@/lib/api";
+import type { AppUser } from "@/types";
+import type { User, Session } from "@supabase/supabase-js";
 import { toast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -15,105 +16,131 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AppUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
-    const checkAuth = async () => {
-      try {
-        const stored = localStorage.getItem("fuel_tracker_auth");
-        if (stored) {
-          const { data } = await authApi.getCurrentUser();
-          setUser(data);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch full user profile
+          try {
+            const { data } = await userApi.getProfile(session.user.id);
+            setUser(data);
+          } catch (error) {
+            console.error("Failed to fetch user profile:", error);
+          }
+        } else {
+          setUser(null);
         }
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        localStorage.removeItem("fuel_tracker_auth");
-      } finally {
+        
         setIsLoading(false);
       }
-    };
+    );
 
-    checkAuth();
+    // THEN check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      
+      if (session?.user) {
+        try {
+          const { data } = await userApi.getProfile(session.user.id);
+          setUser(data);
+        } catch (error) {
+          console.error("Failed to fetch user profile:", error);
+        }
+      }
+      
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const { data } = await authApi.login(email, password);
-      setUser(data);
-      localStorage.setItem("fuel_tracker_auth", "true");
-      localStorage.setItem("fuel_tracker_user", JSON.stringify(data));
-      toast({
-        title: "Welcome back!",
-        description: "Successfully logged in.",
-      });
-    } catch (error) {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid credentials",
+        description: error.message,
         variant: "destructive",
       });
       throw error;
     }
+    
+    toast({
+      title: "Welcome back!",
+      description: "Successfully logged in.",
+    });
   };
 
   const signup = async (email: string, password: string, displayName?: string) => {
-    try {
-      const { data } = await authApi.signup(email, password, displayName);
-      setUser(data);
-      localStorage.setItem("fuel_tracker_auth", "true");
-      localStorage.setItem("fuel_tracker_user", JSON.stringify(data));
-      toast({
-        title: "Welcome!",
-        description: "Account created successfully.",
-      });
-    } catch (error) {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          display_name: displayName,
+        },
+      },
+    });
+
+    if (error) {
       toast({
         title: "Signup failed",
-        description: error instanceof Error ? error.message : "Could not create account",
+        description: error.message,
         variant: "destructive",
       });
       throw error;
     }
+    
+    toast({
+      title: "Welcome!",
+      description: "Account created successfully. You can now log in.",
+    });
   };
 
   const logout = async () => {
-    try {
-      await authApi.logout();
-      setUser(null);
-      localStorage.removeItem("fuel_tracker_auth");
-      localStorage.removeItem("fuel_tracker_user");
-      toast({
-        title: "Logged out",
-        description: "See you next time!",
-      });
-    } catch (error) {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
       console.error("Logout failed:", error);
+      return;
     }
+    
+    toast({
+      title: "Logged out",
+      description: "See you next time!",
+    });
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        signup,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-}
+  const value: AuthContextType = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    signup,
+    logout,
+  };
 
-export function useAuth() {
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-}
+};
