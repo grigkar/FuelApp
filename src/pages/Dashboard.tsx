@@ -100,7 +100,9 @@ export default function Dashboard() {
     .slice(-10)
     .map((e) => ({
       date: format(new Date(e.entry_date), "MMM d"),
-      consumption: e.consumption_l_per_100km,
+      consumption: user?.distance_unit === "mi" 
+        ? Number((235.215 / e.consumption_l_per_100km!).toFixed(1))
+        : e.consumption_l_per_100km,
     }));
 
   const priceChartData = filteredEntries
@@ -195,7 +197,11 @@ export default function Dashboard() {
 
               <StatCard
                 title="Total Distance"
-                value={`${stats.total_distance} ${user?.distance_unit || "km"}`}
+                value={`${
+                  user?.distance_unit === "mi"
+                    ? Math.round(stats.total_distance * 0.621371)
+                    : stats.total_distance
+                } ${user?.distance_unit || "km"}`}
                 icon={Route}
                 description={`Last ${periodDays} days`}
               />
@@ -208,10 +214,14 @@ export default function Dashboard() {
               />
 
               <StatCard
-                title="Avg Cost per km"
+                title={`Avg Cost per ${user?.distance_unit === "mi" ? "mile" : "km"}`}
                 value={
                   stats.avg_cost_per_km > 0
-                    ? `${user?.currency || "€"} ${stats.avg_cost_per_km.toFixed(2)}`
+                    ? `${user?.currency || "€"} ${
+                        user?.distance_unit === "mi"
+                          ? (stats.avg_cost_per_km * 1.60934).toFixed(2)
+                          : stats.avg_cost_per_km.toFixed(2)
+                      }`
                     : "N/A"
                 }
                 icon={DollarSign}
@@ -220,7 +230,11 @@ export default function Dashboard() {
 
               <StatCard
                 title="Avg Distance/Day"
-                value={`${stats.avg_distance_per_day} ${user?.distance_unit || "km"}`}
+                value={`${
+                  user?.distance_unit === "mi"
+                    ? Math.round(stats.avg_distance_per_day * 0.621371)
+                    : stats.avg_distance_per_day
+                } ${user?.distance_unit || "km"}`}
                 icon={Calendar}
                 description={`Last ${periodDays} days`}
               />
