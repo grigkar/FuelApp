@@ -33,6 +33,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Trash2, Download } from "lucide-react";
 import { exportUserDataAsCSV } from "@/lib/exportData";
+import { TimezoneCombobox } from "@/components/TimezoneCombobox";
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
@@ -252,53 +253,10 @@ export default function Settings() {
                   name="time_zone"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pacific/Kwajalein">(GMT -12:00) Eniwetok, Kwajalein</SelectItem>
-                        <SelectItem value="Pacific/Midway">(GMT -11:00) Midway Island, Samoa</SelectItem>
-                        <SelectItem value="Pacific/Honolulu">(GMT -10:00) Hawaii</SelectItem>
-                        <SelectItem value="Pacific/Marquesas">(GMT -9:30) Taiohae</SelectItem>
-                        <SelectItem value="America/Anchorage">(GMT -9:00) Alaska</SelectItem>
-                        <SelectItem value="America/Los_Angeles">(GMT -8:00) Pacific Time (US & Canada)</SelectItem>
-                        <SelectItem value="America/Denver">(GMT -7:00) Mountain Time (US & Canada)</SelectItem>
-                        <SelectItem value="America/Chicago">(GMT -6:00) Central Time (US & Canada), Mexico City</SelectItem>
-                        <SelectItem value="America/New_York">(GMT -5:00) Eastern Time (US & Canada), Bogota, Lima</SelectItem>
-                        <SelectItem value="America/Caracas">(GMT -4:30) Caracas</SelectItem>
-                        <SelectItem value="America/Halifax">(GMT -4:00) Atlantic Time (Canada), La Paz</SelectItem>
-                        <SelectItem value="America/St_Johns">(GMT -3:30) Newfoundland</SelectItem>
-                        <SelectItem value="America/Sao_Paulo">(GMT -3:00) Brazil, Buenos Aires, Georgetown</SelectItem>
-                        <SelectItem value="Atlantic/South_Georgia">(GMT -2:00) Mid-Atlantic</SelectItem>
-                        <SelectItem value="Atlantic/Azores">(GMT -1:00) Azores, Cape Verde Islands</SelectItem>
-                        <SelectItem value="Europe/London">(GMT +0:00) Western Europe Time, London, Lisbon, Casablanca</SelectItem>
-                        <SelectItem value="Europe/Paris">(GMT +1:00) Brussels, Copenhagen, Madrid, Paris</SelectItem>
-                        <SelectItem value="Europe/Kaliningrad">(GMT +2:00) Kaliningrad, South Africa, Cairo</SelectItem>
-                        <SelectItem value="Europe/Moscow">(GMT +3:00) Baghdad, Riyadh, Moscow, St. Petersburg</SelectItem>
-                        <SelectItem value="Asia/Tehran">(GMT +3:30) Tehran</SelectItem>
-                        <SelectItem value="Asia/Dubai">(GMT +4:00) Abu Dhabi, Muscat, Baku, Tbilisi</SelectItem>
-                        <SelectItem value="Asia/Kabul">(GMT +4:30) Kabul</SelectItem>
-                        <SelectItem value="Asia/Karachi">(GMT +5:00) Ekaterinburg, Islamabad, Karachi, Tashkent</SelectItem>
-                        <SelectItem value="Asia/Kolkata">(GMT +5:30) Mumbai, Calcutta, Madras, New Delhi</SelectItem>
-                        <SelectItem value="Asia/Kathmandu">(GMT +5:45) Kathmandu, Pokhara</SelectItem>
-                        <SelectItem value="Asia/Dhaka">(GMT +6:00) Almaty, Dhaka, Colombo</SelectItem>
-                        <SelectItem value="Asia/Yangon">(GMT +6:30) Yangon, Mandalay</SelectItem>
-                        <SelectItem value="Asia/Bangkok">(GMT +7:00) Bangkok, Hanoi, Jakarta</SelectItem>
-                        <SelectItem value="Asia/Shanghai">(GMT +8:00) Beijing, Perth, Singapore, Hong Kong</SelectItem>
-                        <SelectItem value="Australia/Eucla">(GMT +8:45) Eucla</SelectItem>
-                        <SelectItem value="Asia/Tokyo">(GMT +9:00) Tokyo, Seoul, Osaka, Sapporo, Yakutsk</SelectItem>
-                        <SelectItem value="Australia/Adelaide">(GMT +9:30) Adelaide, Darwin</SelectItem>
-                        <SelectItem value="Australia/Sydney">(GMT +10:00) Eastern Australia, Guam, Vladivostok</SelectItem>
-                        <SelectItem value="Australia/Lord_Howe">(GMT +10:30) Lord Howe Island</SelectItem>
-                        <SelectItem value="Pacific/Guadalcanal">(GMT +11:00) Magadan, Solomon Islands, New Caledonia</SelectItem>
-                        <SelectItem value="Pacific/Norfolk">(GMT +11:30) Norfolk Island</SelectItem>
-                        <SelectItem value="Pacific/Auckland">(GMT +12:00) Auckland, Wellington, Fiji, Kamchatka</SelectItem>
-                        <SelectItem value="Pacific/Chatham">(GMT +12:45) Chatham Islands</SelectItem>
-                        <SelectItem value="Pacific/Tongatapu">(GMT +13:00) Apia, Nukualofa</SelectItem>
-                        <SelectItem value="Pacific/Kiritimati">(GMT +14:00) Line Islands, Tokelau</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <TimezoneCombobox
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   )}
                 />
                 {errors.time_zone && (
