@@ -211,15 +211,15 @@ export default function History() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="brand">Brand</Label>
-                <Select value={brandFilter} onValueChange={(val) => {
-                  setBrandFilter(val);
+                <Select value={brandFilter || "all"} onValueChange={(val) => {
+                  setBrandFilter(val === "all" ? "" : val);
                   setPage(1);
                 }}>
                   <SelectTrigger>
                     <SelectValue placeholder="All brands" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All brands</SelectItem>
+                    <SelectItem value="all">All brands</SelectItem>
                     {brands.map(brand => (
                       <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                     ))}
@@ -228,15 +228,15 @@ export default function History() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="grade">Grade</Label>
-                <Select value={gradeFilter} onValueChange={(val) => {
-                  setGradeFilter(val);
+                <Select value={gradeFilter || "all"} onValueChange={(val) => {
+                  setGradeFilter(val === "all" ? "" : val);
                   setPage(1);
                 }}>
                   <SelectTrigger>
                     <SelectValue placeholder="All grades" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All grades</SelectItem>
+                    <SelectItem value="all">All grades</SelectItem>
                     {grades.map(grade => (
                       <SelectItem key={grade} value={grade}>{grade}</SelectItem>
                     ))}
@@ -245,15 +245,15 @@ export default function History() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="station">Station</Label>
-                <Select value={stationFilter} onValueChange={(val) => {
-                  setStationFilter(val);
+                <Select value={stationFilter || "all"} onValueChange={(val) => {
+                  setStationFilter(val === "all" ? "" : val);
                   setPage(1);
                 }}>
                   <SelectTrigger>
                     <SelectValue placeholder="All stations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All stations</SelectItem>
+                    <SelectItem value="all">All stations</SelectItem>
                     {stations.map(station => (
                       <SelectItem key={station} value={station}>{station}</SelectItem>
                     ))}
