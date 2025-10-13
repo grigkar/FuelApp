@@ -58,7 +58,7 @@ export const profileSchema = z.object({
   display_name: z.string().max(100).optional(),
   currency: z.string().length(3, "Currency must be 3 letters (e.g., EUR)"),
   unit_system: z.enum(["metric", "imperial"]),
-  time_zone: z.string().min(1, "Time zone is required"),
+  time_zone: z.string().min(1, "Time zone is required").default(() => Intl.DateTimeFormat().resolvedOptions().timeZone),
 });
 
 /**

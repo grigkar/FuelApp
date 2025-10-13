@@ -46,15 +46,20 @@ export default function Settings() {
 
   const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
+    defaultValues: {
+      time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      currency: "EUR",
+      unit_system: "metric",
+    }
   });
 
   useEffect(() => {
     if (user) {
       reset({
         display_name: user.display_name || "",
-        currency: user.currency,
-        unit_system: user.unit_system,
-        time_zone: user.time_zone,
+        currency: user.currency || "EUR",
+        unit_system: user.unit_system || "metric",
+        time_zone: user.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
     }
   }, [user, reset]);
