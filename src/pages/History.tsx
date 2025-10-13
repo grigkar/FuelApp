@@ -98,7 +98,9 @@ export default function History() {
 
   const vehicles = vehiclesData?.data || [];
   const entries = entriesData?.data || [];
-  const entriesWithMetrics = calculateAllMetrics(entries);
+  const entriesWithMetrics = calculateAllMetrics(entries).sort((a, b) => 
+    new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime()
+  );
   
   // Pagination
   const totalPages = Math.ceil(entriesWithMetrics.length / itemsPerPage);
