@@ -86,6 +86,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const signup = async (email: string, password: string, displayName?: string) => {
+    // Detect browser timezone
+    const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
     // Redirect to dashboard after email confirmation
     const redirectUrl = `${window.location.origin}/dashboard`;
     
@@ -96,6 +99,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         emailRedirectTo: redirectUrl,
         data: {
           display_name: displayName,
+          time_zone: browserTimeZone,
         },
       },
     });
