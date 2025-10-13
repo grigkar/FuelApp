@@ -51,6 +51,14 @@ export default function FillUp() {
   const { register, handleSubmit, control, formState: { errors }, reset, watch } = useForm<FuelEntryFormData>({
     resolver: zodResolver(fuelEntrySchema),
   });
+  
+  // Get selected vehicle's entries for odometer validation
+  const selectedVehicle = watch("vehicle_id");
+  const { data: vehicleEntriesData } = useQuery({
+    queryKey: ["vehicleEntries", selectedVehicle],
+    queryFn: () => selectedVehicle ? fuelEntryApi.getAll({ vehicle_id: selectedVehicle }) : Promise.resolve({ data: [] }),
+    enabled: !!selectedVehicle,
+  });
 
   const liters = watch("liters");
   const total = watch("total");
@@ -109,6 +117,25 @@ export default function FillUp() {
   });
 
   const onSubmit = (data: FuelEntryFormData) => {
+    // Validate odometer against previous entries
+    const vehicleEntries = vehicleEntriesData?.data || [];
+    const sortedEntries = vehicleEntries
+      .filter(e => !isEditing || e.id !== id) // Exclude current entry if editing
+      .sort((a, b) => new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime());
+    
+    const previousEntry = sortedEntries.find(
+      e => new Date(e.entry_date) <= new Date(data.entry_date)
+    );
+    
+    if (previousEntry && data.odometer <= previousEntry.odometer) {
+      toast({
+        title: "Invalid Odometer",
+        description: `Odometer must be greater than previous reading (${previousEntry.odometer} km)`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     saveMutation.mutate(data);
   };
 
