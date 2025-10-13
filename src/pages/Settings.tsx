@@ -70,8 +70,8 @@ export default function Settings() {
 
     setIsDeleting(true);
     try {
-      // Delete the user account - this will CASCADE delete all related data
-      const { error } = await supabase.rpc('delete_user');
+      // Call the delete_user function which will delete the account and all associated data
+      const { error } = await supabase.rpc('delete_user' as any);
       
       if (error) throw error;
 
