@@ -4,6 +4,10 @@ import { userApi } from "@/lib/api";
 import type { AppUser } from "@/types";
 import type { User, Session } from "@supabase/supabase-js";
 import { toast } from "@/hooks/use-toast";
+import { createComponentLogger } from "@/lib/logger";
+import { handleError, formatErrorForUser } from "@/lib/errorHandling";
+
+const logger = createComponentLogger("AuthContext");
 
 interface AuthContextType {
   user: AppUser | null;
@@ -105,9 +109,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (error) {
+      const appError = handleError(error, {
+        component: "AuthContext",
+        action: "signup",
+      });
+      
       toast({
         title: "Signup failed",
-        description: error.message,
+        description: formatErrorForUser(appError),
         variant: "destructive",
       });
       throw error;

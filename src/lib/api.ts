@@ -9,16 +9,25 @@ import type {
   DirectusListResponse,
   DirectusResponse,
 } from "@/types";
+import { logger as baseLogger, createComponentLogger } from "./logger";
+
+const logger = createComponentLogger("API");
 
 // Vehicle API
 export const vehicleApi = {
   async getAll(): Promise<DirectusListResponse<Vehicle>> {
+    const correlationId = baseLogger.generateCorrelationId();
+    logger.info("Fetching all vehicles", { correlationId, action: "getAll" });
+    
     const { data, error } = await supabase
       .from("vehicles")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      logger.error("Failed to fetch vehicles", error, { correlationId });
+      throw error;
+    }
     return { data: data || [] };
   },
 
