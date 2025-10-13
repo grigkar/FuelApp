@@ -1,100 +1,304 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { fuelEntryApi, vehicleApi } from "@/lib/api";
+import { calculateAllMetrics, calculateRollingStats, getConsumptionLabel } from "@/lib/calculations";
+import { PeriodType } from "@/types";
 import Navbar from "@/components/Navbar";
+import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/StatCard";
+import { VehicleSelector } from "@/components/VehicleSelector";
+import { PeriodSelector } from "@/components/PeriodSelector";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/contexts/UserContext";
+import { Plus, TrendingUp, DollarSign, Gauge, Calendar, Route, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Fuel, TrendingUp, DollarSign, Calendar } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import { format } from "date-fns";
 
-const Dashboard = () => {
+export default function Dashboard() {
   const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
+  const { user } = useUser();
+  
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("30");
+  const [customRange, setCustomRange] = useState<{ start: Date; end: Date }>();
 
-  const handleLogout = () => {
-    // TODO: Connect to backend API
-    // Example: POST /api/auth/logout
-    navigate("/");
-  };
+  // Fetch vehicles
+  const { data: vehiclesData } = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: () => vehicleApi.getAll(),
+  });
+
+  // Fetch fuel entries
+  const { data: entriesData, isLoading } = useQuery({
+    queryKey: ["fuelEntries", selectedVehicleId],
+    queryFn: () =>
+      fuelEntryApi.getAll(
+        selectedVehicleId !== "all" ? { vehicle_id: selectedVehicleId } : undefined
+      ),
+  });
+
+  if (!isAuthenticated) {
+    navigate("/auth");
+    return null;
+  }
+
+  const vehicles = vehiclesData?.data || [];
+  const entries = entriesData?.data || [];
+  const entriesWithMetrics = calculateAllMetrics(entries);
+
+  // Calculate period days
+  let periodDays = 30;
+  if (selectedPeriod === "90") periodDays = 90;
+  else if (selectedPeriod === "ytd") {
+    const start = new Date(new Date().getFullYear(), 0, 1);
+    periodDays = Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+  } else if (selectedPeriod === "custom" && customRange) {
+    periodDays = Math.floor(
+      (customRange.end.getTime() - customRange.start.getTime()) / (1000 * 60 * 60 * 24)
+    );
+  }
+
+  // Calculate rolling stats
+  const stats = calculateRollingStats(entriesWithMetrics, periodDays);
+
+  // Prepare chart data (last 10 entries for trend)
+  const chartData = entriesWithMetrics
+    .filter((e) => e.consumption_l_per_100km && e.unit_price)
+    .slice(-10)
+    .map((e) => ({
+      date: format(new Date(e.entry_date), "MMM d"),
+      consumption: e.consumption_l_per_100km,
+      price: e.unit_price,
+    }));
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar isAuthenticated onLogout={handleLogout} />
-      
+      <Navbar isAuthenticated={isAuthenticated} onLogout={logout} />
+
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome to your fuel tracking dashboard
-          </p>
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Track your fuel consumption and costs
+            </p>
+          </div>
+          <Button onClick={() => navigate("/fillup")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Fill-Up
+          </Button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Fill-ups</CardTitle>
-              <Fuel className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">
-                No fill-ups recorded yet
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg. Consumption</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">--</div>
-              <p className="text-xs text-muted-foreground">
-                L/100km
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$0.00</div>
-              <p className="text-xs text-muted-foreground">
-                All time
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Last Fill-up</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">--</div>
-              <p className="text-xs text-muted-foreground">
-                No data
-              </p>
-            </CardContent>
-          </Card>
+        {/* Filters */}
+        <div className="flex gap-4 mb-6 flex-wrap items-center">
+          <VehicleSelector
+            vehicles={vehicles}
+            selectedVehicleId={selectedVehicleId}
+            onSelect={setSelectedVehicleId}
+          />
+          <PeriodSelector
+            selectedPeriod={selectedPeriod}
+            onPeriodChange={setSelectedPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+          />
         </div>
 
-        {/* Placeholder Content */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Fill-ups</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-12 text-muted-foreground">
-              <Fuel className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No fill-ups recorded yet</p>
-              <p className="text-sm mt-2">Start by adding your first fuel entry</p>
+        {isLoading ? (
+          <div className="text-center py-12">Loading dashboard...</div>
+        ) : entriesWithMetrics.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <Activity className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No data yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Add your first fill-up to start tracking
+              </p>
+              <Button onClick={() => navigate("/fillup")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Fill-Up
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* KPI Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+              <StatCard
+                title="Avg Consumption"
+                value={
+                  stats.avg_consumption > 0
+                    ? `${stats.avg_consumption} ${getConsumptionLabel(user?.distance_unit || "km")}`
+                    : "N/A"
+                }
+                icon={Gauge}
+                description={`Last ${periodDays} days`}
+                tooltip="Average fuel consumption - lower is better"
+              />
+
+              <StatCard
+                title="Avg Cost per Liter"
+                value={
+                  stats.avg_cost_per_liter > 0
+                    ? `${user?.currency || "€"} ${stats.avg_cost_per_liter.toFixed(2)}`
+                    : "N/A"
+                }
+                icon={DollarSign}
+                description={`Last ${periodDays} days`}
+              />
+
+              <StatCard
+                title="Total Distance"
+                value={`${stats.total_distance} ${user?.distance_unit || "km"}`}
+                icon={Route}
+                description={`Last ${periodDays} days`}
+              />
+
+              <StatCard
+                title="Total Spend"
+                value={`${user?.currency || "€"} ${stats.total_spend.toFixed(2)}`}
+                icon={TrendingUp}
+                description={`Last ${periodDays} days`}
+              />
+
+              <StatCard
+                title="Avg Cost per km"
+                value={
+                  stats.avg_cost_per_km > 0
+                    ? `${user?.currency || "€"} ${stats.avg_cost_per_km.toFixed(2)}`
+                    : "N/A"
+                }
+                icon={DollarSign}
+                description={`Last ${periodDays} days`}
+              />
+
+              <StatCard
+                title="Avg Distance/Day"
+                value={`${stats.avg_distance_per_day} ${user?.distance_unit || "km"}`}
+                icon={Calendar}
+                description={`Last ${periodDays} days`}
+              />
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Charts */}
+            {chartData.length > 0 && (
+              <div className="grid gap-6 md:grid-cols-2 mb-8">
+                {/* Consumption Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Consumption Trend</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="consumption"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          name={getConsumptionLabel(user?.distance_unit || "km")}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Price Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Price per Liter Trend</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke="hsl(var(--chart-2))"
+                          strokeWidth={2}
+                          name={`${user?.currency || "€"}/L`}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate("/fillup")}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Fill-Up
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate("/history")}
+                  >
+                    View History
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate("/vehicles")}
+                  >
+                    Manage Vehicles
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => navigate("/statistics")}
+                  >
+                    View Statistics
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </main>
+
+      {/* Sticky Add Button */}
+      <Button
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
+        size="icon"
+        onClick={() => navigate("/fillup")}
+      >
+        <Plus className="h-6 w-6" />
+      </Button>
     </div>
   );
-};
-
-export default Dashboard;
+}
