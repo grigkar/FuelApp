@@ -79,12 +79,18 @@ export default function Dashboard() {
   const stats = calculateRollingStats(entriesWithMetrics, periodDays);
 
   // Prepare chart data (last 10 entries for trend)
-  const chartData = entriesWithMetrics
-    .filter((e) => e.consumption_l_per_100km && e.unit_price)
+  const consumptionChartData = entriesWithMetrics
+    .filter((e) => e.consumption_l_per_100km)
     .slice(-10)
     .map((e) => ({
       date: format(new Date(e.entry_date), "MMM d"),
       consumption: e.consumption_l_per_100km,
+    }));
+
+  const priceChartData = entriesWithMetrics
+    .slice(-10)
+    .map((e) => ({
+      date: format(new Date(e.entry_date), "MMM d"),
       price: e.unit_price,
     }));
 
@@ -199,16 +205,16 @@ export default function Dashboard() {
             </div>
 
             {/* Charts */}
-            {chartData.length > 0 && (
-              <div className="grid gap-6 md:grid-cols-2 mb-8">
-                {/* Consumption Chart */}
+            <div className="grid gap-6 md:grid-cols-2 mb-8">
+              {/* Consumption Chart */}
+              {consumptionChartData.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Consumption Trend</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={chartData}>
+                      <LineChart data={consumptionChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
@@ -225,15 +231,17 @@ export default function Dashboard() {
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
+              )}
 
-                {/* Price Chart */}
+              {/* Price Chart */}
+              {priceChartData.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Price per Liter Trend</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={chartData}>
+                      <LineChart data={priceChartData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" />
                         <YAxis />
@@ -250,8 +258,8 @@ export default function Dashboard() {
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Quick Actions */}
             <Card>
