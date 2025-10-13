@@ -5,6 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -18,7 +29,9 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { profileSchema } from "@/lib/validation";
 import { z } from "zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Trash2 } from "lucide-react";
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
@@ -26,6 +39,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const { isAuthenticated, logout } = useAuth();
   const { user, updateUser } = useUser();
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ProfileFormData>({
@@ -49,6 +63,36 @@ export default function Settings() {
       title: "Settings saved",
       description: "Your preferences have been updated.",
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete the user account - this will CASCADE delete all related data
+      const { error } = await supabase.rpc('delete_user');
+      
+      if (error) throw error;
+
+      toast({
+        title: "Account deleted",
+        description: "Your account and all associated data have been permanently deleted.",
+      });
+
+      // Log out and redirect to landing page
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please try again or contact support.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   useEffect(() => {
@@ -240,6 +284,59 @@ export default function Settings() {
                 <Button type="submit">Save Changes</Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Danger Zone - Account Deletion */}
+        <Card className="mt-8 border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardDescription>
+              Irreversible actions that will permanently affect your account
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-2">Delete Account</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Permanently delete your account and all associated data including vehicles, fuel entries, 
+                  and statistics. This action cannot be undone.
+                </p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={isDeleting}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete My Account
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your account and 
+                        remove all your data from our servers including:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>Your profile and settings</li>
+                          <li>All vehicles</li>
+                          <li>All fuel entries and history</li>
+                          <li>All statistics and analytics</li>
+                        </ul>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteAccount}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {isDeleting ? "Deleting..." : "Yes, delete my account"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </main>
