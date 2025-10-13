@@ -250,7 +250,7 @@ export default function Dashboard() {
                         <Line
                           type="monotone"
                           dataKey="price"
-                          stroke="hsl(var(--chart-2))"
+                          stroke="hsl(var(--muted-foreground))"
                           strokeWidth={2}
                           name={`${user?.currency || "€"}/L`}
                         />
