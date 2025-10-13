@@ -63,23 +63,39 @@ export default function Dashboard() {
   const entries = entriesData?.data || [];
   const entriesWithMetrics = calculateAllMetrics(entries);
 
-  // Calculate period days
+  // Calculate period days and date range
   let periodDays = 30;
-  if (selectedPeriod === "90") periodDays = 90;
-  else if (selectedPeriod === "ytd") {
-    const start = new Date(new Date().getFullYear(), 0, 1);
-    periodDays = Math.floor((Date.now() - start.getTime()) / (1000 * 60 * 60 * 24));
+  let startDate: Date;
+  let endDate = new Date();
+
+  if (selectedPeriod === "90") {
+    periodDays = 90;
+    startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  } else if (selectedPeriod === "ytd") {
+    startDate = new Date(new Date().getFullYear(), 0, 1);
+    periodDays = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   } else if (selectedPeriod === "custom" && customRange) {
+    startDate = customRange.start;
+    endDate = customRange.end;
     periodDays = Math.floor(
       (customRange.end.getTime() - customRange.start.getTime()) / (1000 * 60 * 60 * 24)
     );
+  } else {
+    // Default 30 days
+    startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   }
 
-  // Calculate rolling stats
-  const stats = calculateRollingStats(entriesWithMetrics, periodDays);
+  // Filter entries by date range
+  const filteredEntries = entriesWithMetrics.filter((e) => {
+    const entryDate = new Date(e.entry_date);
+    return entryDate >= startDate && entryDate <= endDate;
+  });
 
-  // Prepare chart data (last 10 entries for trend)
-  const consumptionChartData = entriesWithMetrics
+  // Calculate rolling stats
+  const stats = calculateRollingStats(filteredEntries, periodDays);
+
+  // Prepare chart data (last 10 entries for trend within selected period)
+  const consumptionChartData = filteredEntries
     .filter((e) => e.consumption_l_per_100km)
     .slice(-10)
     .map((e) => ({
@@ -87,7 +103,7 @@ export default function Dashboard() {
       consumption: e.consumption_l_per_100km,
     }));
 
-  const priceChartData = entriesWithMetrics
+  const priceChartData = filteredEntries
     .slice(-10)
     .map((e) => ({
       date: format(new Date(e.entry_date), "MMM d"),
