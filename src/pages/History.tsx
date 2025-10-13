@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fuelEntryApi, vehicleApi } from "@/lib/api";
 import { calculateAllMetrics } from "@/lib/calculations";
-import { Navbar } from "@/components/Navbar";
+import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { VehicleSelector } from "@/components/VehicleSelector";
 import {
