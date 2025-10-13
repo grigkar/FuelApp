@@ -47,9 +47,18 @@ const Auth = () => {
   const handleSignup = async (data: SignupFormData) => {
     try {
       await signup(data.email, data.password, data.display_name);
+      // Only navigate if signup was successful and session was created
       navigate("/dashboard");
-    } catch (error) {
-      // Error handled by auth context
+    } catch (error: any) {
+      // If email confirmation is required, switch to login tab
+      if (error.message === "EMAIL_CONFIRMATION_REQUIRED") {
+        setActiveTab("login");
+      }
+      // If user already exists, switch to login tab
+      if (error.message === "USER_ALREADY_EXISTS") {
+        setActiveTab("login");
+      }
+      // Error is already handled by auth context with toast
     }
   };
 

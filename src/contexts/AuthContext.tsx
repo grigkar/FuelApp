@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signup = async (email: string, password: string, displayName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -107,10 +107,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       throw error;
     }
+
+    // Check if email confirmation is required
+    if (data?.user && !data.session) {
+      toast({
+        title: "Check your email",
+        description: "We've sent you a confirmation link. Please check your email to activate your account.",
+      });
+      throw new Error("EMAIL_CONFIRMATION_REQUIRED");
+    }
+
+    // Check if user already exists
+    if (data?.user?.identities?.length === 0) {
+      toast({
+        title: "Account already exists",
+        description: "This email is already registered. Please log in instead.",
+        variant: "destructive",
+      });
+      throw new Error("USER_ALREADY_EXISTS");
+    }
     
     toast({
       title: "Welcome!",
-      description: "Account created successfully. You can now log in.",
+      description: "Account created successfully.",
     });
   };
 
