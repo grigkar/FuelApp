@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, signupSchema } from "@/lib/validation";
 import { z } from "zod";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 type SignupFormData = z.infer<typeof signupSchema>;
@@ -102,9 +103,8 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Password</Label>
-                  <Input
+                  <PasswordInput
                     id="login-password"
-                    type="password"
                     {...loginForm.register("password")}
                   />
                   {loginForm.formState.errors.password && (
@@ -153,9 +153,8 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input
+                  <PasswordInput
                     id="signup-password"
-                    type="password"
                     {...signupForm.register("password")}
                   />
                   {signupForm.formState.errors.password && (
