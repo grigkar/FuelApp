@@ -37,8 +37,7 @@ export default function Settings() {
       reset({
         display_name: user.display_name || "",
         currency: user.currency,
-        distance_unit: user.distance_unit,
-        volume_unit: user.volume_unit,
+        unit_system: user.unit_system,
         time_zone: user.time_zone,
       });
     }
@@ -121,44 +120,26 @@ export default function Settings() {
               </div>
 
               {/* Units */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="distance_unit">Distance Unit</Label>
-                  <Controller
-                    name="distance_unit"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="km">Kilometers (km)</SelectItem>
-                          <SelectItem value="mi">Miles (mi)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="volume_unit">Volume Unit</Label>
-                  <Controller
-                    name="volume_unit"
-                    control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="L">Liters (L)</SelectItem>
-                          <SelectItem value="gal">Gallons (gal)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="unit_system">Units</Label>
+                <Controller
+                  name="unit_system"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="metric">Metric (km, L)</SelectItem>
+                        <SelectItem value="imperial">Imperial (mi, gal)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Choose between metric (kilometers, liters) or imperial (miles, gallons) units
+                </p>
               </div>
 
               {/* Time Zone */}

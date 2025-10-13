@@ -182,21 +182,42 @@ export const userApi = {
       .single();
 
     if (error) throw error;
-    return { data: data as AppUser };
+    
+    // Ensure unit_system is derived from distance_unit if not set
+    const userData = data as any;
+    if (!userData.unit_system && userData.distance_unit) {
+      userData.unit_system = userData.distance_unit === "km" ? "metric" : "imperial";
+    }
+    
+    return { data: userData as AppUser };
   },
 
   async updateProfile(
     userId: string,
     profile: Partial<AppUser>
   ): Promise<DirectusResponse<AppUser>> {
+    // Derive distance_unit and volume_unit from unit_system
+    const updateData: any = { ...profile };
+    if (profile.unit_system) {
+      updateData.distance_unit = profile.unit_system === "metric" ? "km" : "mi";
+      updateData.volume_unit = profile.unit_system === "metric" ? "L" : "gal";
+    }
+
     const { data, error } = await supabase
       .from("profiles")
-      .update(profile)
+      .update(updateData)
       .eq("id", userId)
       .select()
       .single();
 
     if (error) throw error;
-    return { data: data as AppUser };
+    
+    // Ensure returned data has unit_system derived
+    const userData = data as any;
+    if (!userData.unit_system && userData.distance_unit) {
+      userData.unit_system = userData.distance_unit === "km" ? "metric" : "imperial";
+    }
+    
+    return { data: userData as AppUser };
   },
 };

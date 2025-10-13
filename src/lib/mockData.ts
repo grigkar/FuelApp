@@ -6,6 +6,7 @@ export const mockUser: AppUser = {
   email: "demo@fueltracker.app",
   display_name: "Demo User",
   currency: "EUR",
+  unit_system: "metric",
   distance_unit: "km",
   volume_unit: "L",
   time_zone: "Europe/Berlin",

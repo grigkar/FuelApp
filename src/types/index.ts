@@ -5,8 +5,9 @@ export interface AppUser {
   email: string;
   display_name?: string;
   currency: string; // e.g., "EUR", "USD"
-  distance_unit: "km" | "mi";
-  volume_unit: "L" | "gal";
+  unit_system: "metric" | "imperial";
+  distance_unit: "km" | "mi"; // Derived from unit_system
+  volume_unit: "L" | "gal"; // Derived from unit_system
   time_zone: string; // e.g., "Europe/Berlin"
   created_at: string;
   updated_at: string;

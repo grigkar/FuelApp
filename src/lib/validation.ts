@@ -57,8 +57,7 @@ export const fuelEntrySchema = z.object({
 export const profileSchema = z.object({
   display_name: z.string().max(100).optional(),
   currency: z.string().length(3, "Currency must be 3 letters (e.g., EUR)"),
-  distance_unit: z.enum(["km", "mi"]),
-  volume_unit: z.enum(["L", "gal"]),
+  unit_system: z.enum(["metric", "imperial"]),
   time_zone: z.string().min(1, "Time zone is required"),
 });
 

@@ -79,6 +79,7 @@ export type Database = {
           email: string
           id: string
           time_zone: string
+          unit_system: string
           updated_at: string
           volume_unit: string
         }
@@ -90,6 +91,7 @@ export type Database = {
           email: string
           id: string
           time_zone?: string
+          unit_system?: string
           updated_at?: string
           volume_unit?: string
         }
@@ -101,6 +103,7 @@ export type Database = {
           email?: string
           id?: string
           time_zone?: string
+          unit_system?: string
           updated_at?: string
           volume_unit?: string
         }
