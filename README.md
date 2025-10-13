@@ -226,26 +226,75 @@ An **individual driver** managing their own vehicle data.
 ## 🧩 7. Implementation Guidelines
 
 ### Backend
-- REST API (Java / Spring Boot | Node.js / NestJS | . NET)  
-- Session cookies + CSRF protection  
-- Data validation on server and client  
-- Postgres DB with Liquibase for migrations  
+- Supabase (PostgreSQL + REST API + Authentication)
+- Row Level Security (RLS) for data access control
+- Database migrations for schema versioning
+- Server-side data validation
 
 ### Frontend
-- ReactJS or Angular 2+  
-- Responsive UI  
-- Client-side form validation + error feedback  
+- React 18 + TypeScript
+- Vite for build tooling
+- Tailwind CSS for styling
+- React Hook Form + Zod for validation
+- TanStack Query for data fetching
+- Responsive design (mobile-first)
 
 ### DevOps
-- Dockerized service  
-- `docker-compose.yaml` starts app + DB  
-- Auto apply schema and seed data  
-- Baseline admin/dev users for local env  
+- Dockerized service (multi-stage build)
+- `docker compose up` starts complete stack
+- Auto-apply database migrations
+- Zero-config local development
+- Production-ready deployment options
 
 ### Code Practices
-- Consistent patterns for similar features  
-- Clear naming and folder structure  
-- Avoid premature complexity  
+- Component-based architecture
+- Custom hooks for reusable logic
+- Type safety with TypeScript
+- Consistent naming and folder structure
+- Design system with semantic tokens
+
+---
+
+## 🚀 8. Deployment
+
+### Quick Start (Local Development)
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd fuel-tracker
+
+# Start everything (Frontend + API + Database)
+docker compose up
+```
+
+**Access the application:**
+- **App:** http://localhost:8080
+- **Supabase Studio** (Admin UI): http://localhost:54323
+- **API:** http://localhost:54321
+
+That's it! The complete stack is running locally with automatic database migrations.
+
+### Production Deployment
+
+For detailed deployment instructions including:
+- ☁️ Cloud deployment (Vercel + Supabase Cloud)
+- 🐳 Self-hosted Docker deployment
+- 🔧 Manual deployment options
+- 📊 Monitoring and backups
+- 🔒 Security configuration
+
+**See:** [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+### Client Handover
+
+For complete handover documentation including:
+- Access credentials and team management
+- Database backups and monitoring
+- Troubleshooting guides
+- Support contacts
+
+**See:** [HANDOVER.md](./HANDOVER.md)
 
 ---
 
