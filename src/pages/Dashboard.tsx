@@ -250,9 +250,9 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={consumptionChartData}>
+                      <LineChart data={consumptionChartData} margin={{ left: 10, right: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
+                        <XAxis dataKey="date" padding={{ left: 20, right: 20 }} />
                         <YAxis />
                         <Tooltip />
                         <Legend />
@@ -279,9 +279,9 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={priceChartData}>
+                      <LineChart data={priceChartData} margin={{ left: 10, right: 10 }}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
+                        <XAxis dataKey="date" padding={{ left: 20, right: 20 }} />
                         <YAxis />
                         <Tooltip />
                         <Legend />
