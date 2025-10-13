@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { isRateLimitError, isTimeoutError } from "./retry";
 
 export interface AppError {
   message: string;
@@ -45,7 +46,18 @@ export function handleError(
  * Format error message for display to users
  */
 export function formatErrorForUser(appError: AppError): string {
-  return `${appError.message} (Ref: ${appError.correlationId.slice(-8)})`;
+  let message = appError.message;
+
+  // Add specific context for common error types
+  if (isRateLimitError({ message: appError.message })) {
+    message = "Too many requests. Please wait a moment and try again.";
+  } else if (isTimeoutError({ message: appError.message })) {
+    message = "Request timed out. Please check your connection and try again.";
+  } else if (isNetworkError({ message: appError.message })) {
+    message = "Network error. Please check your connection.";
+  }
+
+  return `${message} (Ref: ${appError.correlationId.slice(-8)})`;
 }
 
 /**

@@ -10,8 +10,12 @@ import type {
   DirectusResponse,
 } from "@/types";
 import { logger as baseLogger, createComponentLogger } from "./logger";
+import { retryWithBackoff, withTimeout } from "./retry";
 
 const logger = createComponentLogger("API");
+
+// Request timeout in milliseconds (30 seconds)
+const REQUEST_TIMEOUT = 30000;
 
 // Vehicle API
 export const vehicleApi = {
@@ -19,27 +23,42 @@ export const vehicleApi = {
     const correlationId = baseLogger.generateCorrelationId();
     logger.info("Fetching all vehicles", { correlationId, action: "getAll" });
     
-    const { data, error } = await supabase
-      .from("vehicles")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      logger.error("Failed to fetch vehicles", error, { correlationId });
-      throw error;
-    }
-    return { data: data || [] };
+    return retryWithBackoff(async () => {
+      const fetchVehicles = async () => {
+        const { data, error } = await supabase
+          .from("vehicles")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (error) {
+          logger.error("Failed to fetch vehicles", error, { correlationId });
+          throw error;
+        }
+        
+        return { data: data || [] };
+      };
+      
+      return withTimeout(fetchVehicles(), REQUEST_TIMEOUT);
+    });
   },
 
   async getById(id: string): Promise<DirectusResponse<Vehicle>> {
-    const { data, error } = await supabase
-      .from("vehicles")
-      .select("*")
-      .eq("id", id)
-      .single();
+    return retryWithBackoff(async () => {
+      const fetchVehicle = async () => {
+        const { data, error } = await supabase
+          .from("vehicles")
+          .select("*")
+          .eq("id", id)
+          .maybeSingle();
 
-    if (error) throw error;
-    return { data };
+        if (error) throw error;
+        if (!data) throw new Error("Vehicle not found");
+        
+        return { data };
+      };
+      
+      return withTimeout(fetchVehicle(), REQUEST_TIMEOUT);
+    });
   },
 
   async create(
