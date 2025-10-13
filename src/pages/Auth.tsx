@@ -160,6 +160,10 @@ const Auth = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   By signing up, you agree to our{" "}
+                  <Link to="/terms" className="underline hover:text-foreground">
+                    Terms of Service
+                  </Link>
+                  {" "}and{" "}
                   <Link to="/privacy" className="underline hover:text-foreground">
                     Privacy Policy
                   </Link>

@@ -101,6 +101,15 @@ const Privacy = () => {
             You may also have the right to restrict or object to certain processing of your data.
           </p>
 
+          <h2>Related Policies</h2>
+          <p>
+            Please also review our{" "}
+            <Link to="/terms" className="text-primary hover:underline">
+              Terms of Service
+            </Link>
+            {" "}for information about your rights and responsibilities when using FuelApp.
+          </p>
+
           <h2>Contact</h2>
           <p>
             If you have any questions about this Privacy Policy, please contact us at: 
