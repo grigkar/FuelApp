@@ -14,7 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      fuel_entries: {
+        Row: {
+          brand: string
+          created_at: string
+          entry_date: string
+          grade: string
+          id: string
+          liters: number
+          notes: string | null
+          odometer: number
+          station: string
+          total: number
+          updated_at: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          entry_date: string
+          grade: string
+          id?: string
+          liters: number
+          notes?: string | null
+          odometer: number
+          station: string
+          total: number
+          updated_at?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          entry_date?: string
+          grade?: string
+          id?: string
+          liters?: number
+          notes?: string | null
+          odometer?: number
+          station?: string
+          total?: number
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_entries_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          currency: string
+          display_name: string | null
+          distance_unit: string
+          email: string
+          id: string
+          time_zone: string
+          updated_at: string
+          volume_unit: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          display_name?: string | null
+          distance_unit?: string
+          email: string
+          id: string
+          time_zone?: string
+          updated_at?: string
+          volume_unit?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          display_name?: string | null
+          distance_unit?: string
+          email?: string
+          id?: string
+          time_zone?: string
+          updated_at?: string
+          volume_unit?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          created_at: string
+          fuel_type: string | null
+          id: string
+          make: string | null
+          model: string | null
+          name: string
+          updated_at: string
+          user_id: string
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          fuel_type?: string | null
+          id?: string
+          make?: string | null
+          model?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          fuel_type?: string | null
+          id?: string
+          make?: string | null
+          model?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
