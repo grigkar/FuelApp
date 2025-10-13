@@ -296,14 +296,4 @@ For complete handover documentation including:
 
 **See:** [HANDOVER.md](./HANDOVER.md)
 
----
 
-## 🚀 8. Deployment
-
-```bash
-# Clone repository
-git clone <repo-url>
-cd fuel-tracker
-
-# Run locally (API + DB)
-docker compose up
