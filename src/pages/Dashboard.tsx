@@ -107,7 +107,9 @@ export default function Dashboard() {
     .slice(-10)
     .map((e) => ({
       date: format(new Date(e.entry_date), "MMM d"),
-      price: e.unit_price,
+      price: user?.volume_unit === "gal" 
+        ? e.unit_price * 3.78541  // Convert €/L to €/gal
+        : e.unit_price,
     }));
 
   return (
@@ -177,10 +179,14 @@ export default function Dashboard() {
               />
 
               <StatCard
-                title="Avg Cost per Liter"
+                title={`Avg Cost per ${user?.volume_unit === "gal" ? "Gallon" : "Liter"}`}
                 value={
                   stats.avg_cost_per_liter > 0
-                    ? `${user?.currency || "€"} ${stats.avg_cost_per_liter.toFixed(2)}`
+                    ? `${user?.currency || "€"} ${
+                        user?.volume_unit === "gal"
+                          ? (stats.avg_cost_per_liter * 3.78541).toFixed(2)
+                          : stats.avg_cost_per_liter.toFixed(2)
+                      }`
                     : "N/A"
                 }
                 icon={DollarSign}
@@ -253,7 +259,9 @@ export default function Dashboard() {
               {priceChartData.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Price per Liter Trend</CardTitle>
+                    <CardTitle>
+                      Price per {user?.volume_unit === "gal" ? "Gallon" : "Liter"} Trend
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -268,7 +276,7 @@ export default function Dashboard() {
                           dataKey="price"
                           stroke="hsl(var(--muted-foreground))"
                           strokeWidth={2}
-                          name={`${user?.currency || "€"}/L`}
+                          name={`${user?.currency || "€"}/${user?.volume_unit || "L"}`}
                         />
                       </LineChart>
                     </ResponsiveContainer>

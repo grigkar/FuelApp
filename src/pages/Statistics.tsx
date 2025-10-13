@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fuelEntryApi, vehicleApi } from "@/lib/api";
-import { calculateAllMetrics, calculateBrandGradeStats } from "@/lib/calculations";
+import { calculateAllMetrics, calculateBrandGradeStats, getConsumptionLabel, getConsumptionValue } from "@/lib/calculations";
 import Navbar from "@/components/Navbar";
 import { VehicleSelector } from "@/components/VehicleSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,7 +94,9 @@ export default function Statistics() {
                   <TableRow>
                     <TableHead>Brand</TableHead>
                     <TableHead>Grade</TableHead>
-                    <TableHead className="text-right">Avg Cost/L</TableHead>
+                    <TableHead className="text-right">
+                      Avg Cost/{user?.volume_unit || "L"}
+                    </TableHead>
                     <TableHead className="text-right">Avg Consumption</TableHead>
                     <TableHead className="text-right"># Fill-ups</TableHead>
                   </TableRow>
@@ -107,11 +109,17 @@ export default function Statistics() {
                         <TableCell className="font-medium">{stat.brand}</TableCell>
                         <TableCell>{stat.grade}</TableCell>
                         <TableCell className="text-right">
-                          {user?.currency} {stat.avg_cost_per_liter.toFixed(2)}
+                          {user?.currency}{" "}
+                          {(user?.volume_unit === "gal"
+                            ? stat.avg_cost_per_liter * 3.78541
+                            : stat.avg_cost_per_liter
+                          ).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right">
                           {stat.avg_consumption > 0
-                            ? `${stat.avg_consumption.toFixed(1)} L/100km`
+                            ? user?.distance_unit === "mi"
+                              ? `${(235.215 / stat.avg_consumption).toFixed(1)} MPG`
+                              : `${stat.avg_consumption.toFixed(1)} L/100km`
                             : "-"}
                         </TableCell>
                         <TableCell className="text-right">{stat.fillup_count}</TableCell>
@@ -151,23 +159,35 @@ export default function Statistics() {
                     .sort((a, b) => a.avg_consumption - b.avg_consumption)[0]?.brand || "N/A"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {brandGradeStats
-                    .filter((s) => s.avg_consumption > 0)
-                    .sort((a, b) => a.avg_consumption - b.avg_consumption)[0]?.avg_consumption.toFixed(1) || "0"} L/100km
+                  {(() => {
+                    const bestConsumption = brandGradeStats
+                      .filter((s) => s.avg_consumption > 0)
+                      .sort((a, b) => a.avg_consumption - b.avg_consumption)[0]?.avg_consumption;
+                    if (!bestConsumption) return "0";
+                    return user?.distance_unit === "mi"
+                      ? `${(235.215 / bestConsumption).toFixed(1)} MPG`
+                      : `${bestConsumption.toFixed(1)} L/100km`;
+                  })()}
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Lowest Cost/L</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Lowest Cost/{user?.volume_unit || "L"}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {brandGradeStats.sort((a, b) => a.avg_cost_per_liter - b.avg_cost_per_liter)[0].brand}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {user?.currency} {brandGradeStats.sort((a, b) => a.avg_cost_per_liter - b.avg_cost_per_liter)[0].avg_cost_per_liter.toFixed(2)}/L
+                  {user?.currency}{" "}
+                  {(user?.volume_unit === "gal"
+                    ? brandGradeStats.sort((a, b) => a.avg_cost_per_liter - b.avg_cost_per_liter)[0].avg_cost_per_liter * 3.78541
+                    : brandGradeStats.sort((a, b) => a.avg_cost_per_liter - b.avg_cost_per_liter)[0].avg_cost_per_liter
+                  ).toFixed(2)}/{user?.volume_unit || "L"}
                 </p>
               </CardContent>
             </Card>

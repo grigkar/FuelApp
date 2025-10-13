@@ -289,7 +289,7 @@ export default function History() {
                     <TableHead>Grade</TableHead>
                     <TableHead>Volume</TableHead>
                     <TableHead>Total</TableHead>
-                    <TableHead>€/L</TableHead>
+                    <TableHead>{user?.currency || "€"}/{user?.volume_unit || "L"}</TableHead>
                     <TableHead>{getConsumptionLabel(user?.distance_unit || "km")}</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -322,7 +322,12 @@ export default function History() {
                       <TableCell>
                         {user?.currency} {entry.total.toFixed(2)}
                       </TableCell>
-                      <TableCell>{entry.unit_price.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {(user?.volume_unit === "gal" 
+                          ? entry.unit_price * 3.78541 
+                          : entry.unit_price
+                        ).toFixed(2)}
+                      </TableCell>
                       <TableCell>
                         {getConsumptionValue(entry, user?.distance_unit || "km")?.toFixed(1) || "-"}
                       </TableCell>
