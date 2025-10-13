@@ -31,7 +31,8 @@ import { profileSchema } from "@/lib/validation";
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Trash2 } from "lucide-react";
+import { Trash2, Download } from "lucide-react";
+import { exportUserDataAsCSV } from "@/lib/exportData";
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
@@ -40,6 +41,7 @@ export default function Settings() {
   const { isAuthenticated, logout } = useAuth();
   const { user, updateUser } = useUser();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
   const { register, handleSubmit, control, formState: { errors }, reset } = useForm<ProfileFormData>({
@@ -92,6 +94,28 @@ export default function Settings() {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    if (!user) return;
+
+    setIsExporting(true);
+    try {
+      await exportUserDataAsCSV(user.id);
+      toast({
+        title: "Data exported",
+        description: "Your data has been downloaded as a CSV file.",
+      });
+    } catch (error) {
+      console.error("Failed to export data:", error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export your data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -284,6 +308,32 @@ export default function Settings() {
                 <Button type="submit">Save Changes</Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Data Export Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Export Your Data</CardTitle>
+            <CardDescription>
+              Download all your data in CSV format for backup or transfer purposes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This will download a CSV file containing all your profile information, vehicles, and fuel entries.
+                You can use this to keep a backup or transfer your data to another service.
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={handleExportData}
+                disabled={isExporting}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {isExporting ? "Exporting..." : "Export My Data"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
