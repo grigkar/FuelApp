@@ -94,9 +94,10 @@ export default function Dashboard() {
   // Calculate rolling stats
   const stats = calculateRollingStats(filteredEntries, periodDays);
 
-  // Prepare chart data (last 10 entries for trend within selected period)
-  const consumptionChartData = filteredEntries
+  // Prepare chart data (last 10 entries for trend within selected period, sorted by date)
+  const consumptionChartData = [...filteredEntries]
     .filter((e) => e.consumption_l_per_100km)
+    .sort((a, b) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime())
     .slice(-10)
     .map((e) => ({
       date: format(new Date(e.entry_date), "MMM d"),
@@ -105,7 +106,8 @@ export default function Dashboard() {
         : e.consumption_l_per_100km,
     }));
 
-  const priceChartData = filteredEntries
+  const priceChartData = [...filteredEntries]
+    .sort((a, b) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime())
     .slice(-10)
     .map((e) => ({
       date: format(new Date(e.entry_date), "MMM d"),
